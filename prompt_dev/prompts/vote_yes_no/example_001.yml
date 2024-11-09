@@ -1,0 +1,25 @@
+# variables in common for the test cases
+setup:
+  player: "Jonathan"
+  player_type: "townsperson"
+  backstory: "Jonathan is a gardener with a troubled past."
+  transcript: |
+    [Jonathan]: I'm not the mafia. I'm just a gardener. I've done some bad things in the past, but I'm not the mafia.
+    [Marge]: I did it. I'm the mafia.
+
+# variables to update for a test case
+test_cases:
+  # Jonathan would not vote for himself
+  - target_player: "Jonathan"
+    expected_output: "no"
+
+  # Jonathan would vote for Marge because she confessed.
+  - target_player: "Marge"
+    expected_output: "yes"
+
+  # Marge would not vote for herself
+  - target_player: "Marge"
+    backstory: "Marge is an avid birdwatcher, but is she actually dangerous?"
+    player: "Marge"
+    player_type: "mafia"
+    expected_output: "no"

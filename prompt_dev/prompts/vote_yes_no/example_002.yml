@@ -1,0 +1,25 @@
+# variables in common for the test cases
+setup:
+  player: "Jonathan"
+  player_type: "townsperson"
+  backstory: "Jonathan is a gardener with a troubled past."
+  transcript: |
+    [Jonathan]: I'm not the mafia. I'm just a gardener. I've done some bad things in the past, but I'm not the mafia.
+    [Marge]: I did it. I'm the mafia.
+    [Alex]: That's a bold claim, Marge. Why would you admit to that?
+    [Marge]: Because it's the truth.
+    [Sam]: Or maybe you're just trying to throw us off, Marge. I don't know who to believe.
+    [Jonathan]: I've known Marge for a while, but this is really suspicious.
+    [Marge]: Believe what you want, but I can't change your minds.
+    [Alex]: Jonathan, do you really think Marge would just come out and say that if she were the mafia?
+    [Jonathan]: I don't know, but it sounds too convenient. She's hiding something, I can feel it.
+
+# variables to update for a test case
+test_cases:
+  # description: "Jonathan would vote for Marge because her confession still seems suspicious to him."
+  - target_player: "Marge"
+    expected_output: "yes"
+
+  # description:  "Jonathan would not vote for Alex, as Alex seems to be analyzing the situation rather than deflecting suspicion."
+  - target_player: "Alex"
+    expected_output: "no"

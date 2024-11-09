@@ -1,0 +1,19 @@
+# variables in common for the test cases
+setup:
+  player: "Jonathan"
+  player_type: "townsperson"
+  backstory: "Jonathan is a gardener with a troubled past."
+  transcript: |
+    [Jonathan]: I'm not the mafia. I'm just a gardener. I've done some bad things in the past, but I'm not the mafia.
+    [Marge]: I did it. I'm the mafia.
+
+# variables to update for a test case
+test_cases:
+  # Jonathan might nominate Marge because she confessed.
+  - expected_output: "I feel like Marge is a little suspicious."
+
+  # Marge behavior is unpredictable
+  - backstory: "Marge is an avid birdwatcher, but is she actually dangerous?"
+    player: "Marge"
+    player_type: "mafia"
+    expected_output: "Hoooo boy, I should not have said that. I'm in trouble now."
