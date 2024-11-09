@@ -46,4 +46,6 @@ export default class CaptionsClient {
       { url: string; state: string } | { detail: string }
     >;
   };
+
+  // todo wrap poll 
 }

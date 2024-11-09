@@ -35,6 +35,8 @@ export default class GameState {
   };
 
   private pickPlayerToSpeak = () => {
+    // maybe use gpt to determine who should speak
+    
     // pick a player to speak
     return this.players[Math.floor(Math.random() * this.players.length)];
   };
