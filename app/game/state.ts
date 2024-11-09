@@ -36,7 +36,7 @@ export default class GameState {
 
   private pickPlayerToSpeak = () => {
     // maybe use gpt to determine who should speak
-    
+
     // pick a player to speak
     return this.players[Math.floor(Math.random() * this.players.length)];
   };
@@ -81,6 +81,7 @@ export default class GameState {
 
     player.die();
     this.killLog.push({ player, round: this.killLog.length });
+    this.updateTranscript("Player " + player.getState().name + " was killed");
   };
 
   private mafiaVoteToKill = () => {
@@ -130,6 +131,7 @@ export default class GameState {
     // kill the player
     player.die();
     this.killLog.push({ player, round: this.killLog.length });
+    this.updateTranscript("Player " + player.getState().name + " was killed");
   };
 
   public determineIfGameOver = () => {
