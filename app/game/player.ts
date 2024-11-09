@@ -1,6 +1,7 @@
+import { play } from "elevenlabs";
 import { elevenLabsClient } from "../clients/11labs";
 
-type PlayerState = {
+export type PlayerState = {
   name: string;
   type: "mafia" | "citizen";
   isAlive: boolean;
@@ -45,14 +46,15 @@ export default class Player {
   public speak = async () => {
     // prompt gpt to determine what to say based on transcript so far, if picked to speak
 
-    await this.callTextToSpeech("TODO: get text from gpt");
+    const audio = await this.callTextToSpeech("TODO: get text from gpt");
+    await play(audio);
 
     return "TEXT FROM GPT";
   };
 
   // call this
   private callTextToSpeech = async (text: string) => {
-    await elevenLabsClient.generate({
+    return await elevenLabsClient.generate({
       voice: this.state.voiceId,
       text,
     });
