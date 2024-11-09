@@ -1,5 +1,6 @@
 import { play } from "elevenlabs";
 import { elevenLabsClient } from "../clients/11labs";
+import { createAudioStreamFromText } from "../utils/tts_service";
 
 export type PlayerState = {
   name: string;
@@ -52,12 +53,26 @@ export default class Player {
   };
 
   // call this
-  private callTextToSpeech = async (text: string) => {
-    return await elevenLabsClient.generate({
-      voice: this.state.voiceId,
-      text,
-    });
-  };
+  private async callTextToSpeech(text: string): Promise<void> {
+    try {
+      // Use the createAudioStreamFromText function
+      const { voiceId } = this.state;
+
+      const audioBlob = await createAudioStreamFromText(text, voiceId);
+
+      // Create a URL for the audio Blob
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Play the audio using the Audio API
+      const audio = new Audio(audioUrl);
+      audio.play();
+
+      // Revoke the Blob URL after the audio finishes playing
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+    } catch (error) {
+      console.error("Error during text-to-speech:", error);
+    }
+  }
 
   // tood stt for the player
 }
