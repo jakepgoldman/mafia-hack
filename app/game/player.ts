@@ -57,4 +57,6 @@ export default class Player {
       text,
     });
   };
+
+  // tood stt for the player
 }
