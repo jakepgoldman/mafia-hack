@@ -1,7 +1,8 @@
+import { play } from "elevenlabs";
 import { elevenLabsClient } from "../clients/11labs";
 import { createAudioStreamFromText } from "../utils/tts_service";
 
-type PlayerState = {
+export type PlayerState = {
   name: string;
   type: "mafia" | "citizen";
   isAlive: boolean;

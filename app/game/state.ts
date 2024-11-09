@@ -1,44 +1,52 @@
 import Player from "./player";
 
-export default class GameState {
-  private stage: "day" | "night" = "day";
-  private isGameOver: boolean = false;
-  private ganeStatus: "mafia wins" | "citizens win" | "game not over" =
-    "game not over";
-  private ganmeTranscript: string = "";
-  private players: Player[] = [];
-  private killLog: { player: Player; round: number }[] = [];
+export type GameState = {
+  stage: "day" | "night";
+  isGameOver: boolean;
+  gameStatus: "mafia wins" | "citizens win" | "game not over";
+  gameTranscript: string;
+  players: Player[];
+  killLog: { player: Player; round: number }[];
+  currentRound: number;
+};
 
-  constructor() {}
+export default class Game {
+  private state: GameState;
+
+  constructor(state: GameState) {
+    this.state = state;
+  }
 
   public addPlayer(player: Player) {
-    this.players.push(player);
+    this.state.players.push(player);
   }
 
   public getPlayers() {
-    return this.players;
+    return this.state.players;
   }
 
   public getState = () => {
     return {
-      stage: this.stage,
-      isGameOver: this.isGameOver,
-      ganeStatus: this.ganeStatus,
-      killLog: this.killLog,
-      ganmeTranscript: this.ganmeTranscript,
-      players: this.players.map((player) => player.getState()),
+      stage: this.state.stage,
+      isGameOver: this.state.isGameOver,
+      ganeStatus: this.state.gameStatus,
+      killLog: this.state.killLog,
+      ganmeTranscript: this.state.gameTranscript,
+      players: this.state.players.map((player) => player.getState()),
     };
   };
 
   public updateTranscript = (transcript: string) => {
-    this.ganmeTranscript = this.ganmeTranscript + "\n" + transcript;
+    this.state.gameTranscript = this.state.gameTranscript + "\n" + transcript;
   };
 
   private pickPlayerToSpeak = () => {
     // maybe use gpt to determine who should speak
 
     // pick a player to speak
-    return this.players[Math.floor(Math.random() * this.players.length)];
+    return this.state.players[
+      Math.floor(Math.random() * this.state.players.length)
+    ];
   };
 
   public playerSpeak = async () => {
@@ -51,8 +59,8 @@ export default class GameState {
   private tallyVotesOfWhoToKill = () => {
     // tally votes to kill
 
-    const votes = this.players.map((player) => {
-      return player.voteToKill(this.players, this.ganmeTranscript);
+    const votes = this.state.players.map((player) => {
+      return player.voteToKill(this.state.players, this.state.gameTranscript);
     });
 
     // get the player with the most votes
@@ -71,7 +79,7 @@ export default class GameState {
   public tallyVotesAndKill = () => {
     // tally votes to kill
     const playerToKillName = this.tallyVotesOfWhoToKill();
-    const player = this.players.find(
+    const player = this.state.players.find(
       (player) => player.getState().name === playerToKillName
     );
 
@@ -80,21 +88,23 @@ export default class GameState {
     }
 
     player.die();
-    this.killLog.push({ player, round: this.killLog.length });
+    this.state.killLog.push({ player, round: this.state.killLog.length });
     this.updateTranscript("Player " + player.getState().name + " was killed");
   };
 
   private mafiaVoteToKill = () => {
     // mafia votes to kill
-    const mafia = this.players.filter(
+    const mafia = this.state.players.filter(
       (player) => player.getState().type === "mafia"
     );
 
     // mafia votes to kill, can't kill mafia
     const votes = mafia.map((player) => {
       return player.voteToKill(
-        this.players.filter((player) => player.getState().type !== "mafia"),
-        this.ganmeTranscript
+        this.state.players.filter(
+          (player) => player.getState().type !== "mafia"
+        ),
+        this.state.gameTranscript
       );
     });
 
@@ -115,7 +125,7 @@ export default class GameState {
     // mafia votes to kill
     const playerToKillName = this.mafiaVoteToKill();
 
-    const player = this.players.find(
+    const player = this.state.players.find(
       (player) => player.getState().name === playerToKillName
     );
 
@@ -130,24 +140,24 @@ export default class GameState {
 
     // kill the player
     player.die();
-    this.killLog.push({ player, round: this.killLog.length });
+    this.state.killLog.push({ player, round: this.state.killLog.length });
     this.updateTranscript("Player " + player.getState().name + " was killed");
   };
 
   public determineIfGameOver = () => {
-    const mafia = this.players.filter(
+    const mafia = this.state.players.filter(
       (player) => player.getState().type === "mafia"
     );
-    const citizens = this.players.filter(
+    const citizens = this.state.players.filter(
       (player) => player.getState().type === "citizen"
     );
 
     if (mafia.length === 0) {
-      this.isGameOver = true;
-      this.ganeStatus = "citizens win";
+      this.state.isGameOver = true;
+      this.state.gameStatus = "citizens win";
     } else if (mafia.length >= citizens.length) {
-      this.isGameOver = true;
-      this.ganeStatus = "mafia wins";
+      this.state.isGameOver = true;
+      this.state.gameStatus = "mafia wins";
     }
   };
 }
