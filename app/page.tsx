@@ -3,8 +3,8 @@
 import { Button, Card, Flex, useMantineColorScheme, Modal, Title } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
 import { AgentCenter } from "../components/AgentCenter";
-import Player, { PlayerState } from "./game/player";
 import Narrator from "./game/narrator";
+import Player, { PlayerState } from "./game/player";
 
 export type Game = {
   stage: "day" | "night";
@@ -15,7 +15,7 @@ export type Game = {
   killLog: { player: Player; round: number }[];
   currentRound: number;
   playersSpokenInRound: Player[];
-  playerSpeaking: Player | undefined
+  playerSpeaking: Player | undefined;
 };
 
 const stock_players: PlayerState[] = [
@@ -94,11 +94,11 @@ export default function HomePage() {
     gameStatus: "game not over",
     gameTranscript: "",
     players: stock_players.map((p) => new Player(p)),
-    narrator: new Narrator({ voiceId: "j9jfwdrw7BRfcR43Qohk" }),
+    narrator: new Narrator({ voiceId: "PYk8OsLYRxGOa8iCEdm1" }),
     killLog: [] as { player: Player; round: number }[],
     currentRound: 1,
     playersSpokenInRound: [] as Player[],
-    playerSpeaking: undefined as Player | undefined
+    playerSpeaking: undefined as Player | undefined,
   });
 
   const { setColorScheme } = useMantineColorScheme();
@@ -118,25 +118,32 @@ export default function HomePage() {
         player.getState().type === "citizen" && player.getState().isAlive
     );
 
+    let gameStatus = "game not over";
     if (mafia.length === 0) {
+      gameStatus = "citizens win";
       setGameState((prev) => ({
         ...prev,
         isGameOver: true,
-        gameStatus: "citizens win",
+        gameTranscript: prev.gameTranscript + "\nMafia has been eliminated",
+        gameStatus,
       }));
     } else if (mafia.length >= citizens.length) {
+      gameStatus = "mafia wins";
       setGameState((prev) => ({
         ...prev,
         isGameOver: true,
-        gameStatus: "mafia wins",
+        gameTranscript: prev.gameTranscript + "\nCitizens have been eliminated",
+        gameStatus,
       }));
     }
+
+    return gameStatus;
   }, [gameState.players]);
 
   const handlePlayerSpeak = useCallback(async () => {
     setGameState((prev) => ({
       ...prev,
-      playerSpeaking: undefined
+      playerSpeaking: undefined,
     }));
 
     const pickPlayerToSpeak = () => {
@@ -144,7 +151,7 @@ export default function HomePage() {
       while (!chosenPlayer) {
         const randomPlayer =
           gameState.players[
-          Math.floor(Math.random() * gameState.players.length)
+            Math.floor(Math.random() * gameState.players.length)
           ];
 
         if (
@@ -166,7 +173,7 @@ export default function HomePage() {
 
     setGameState((prev) => ({
       ...prev,
-      playerSpeaking: player
+      playerSpeaking: player,
     }));
 
     const textSpoken = await player.speak(
@@ -187,13 +194,13 @@ export default function HomePage() {
       (player) => player.getState().isAlive
     );
 
+    console.log(gameState.playersSpokenInRound.length, alivePlayers.length);
     if (
       gameState.playersSpokenInRound.length === 3 ||
-      gameState.playersSpokenInRound.length === alivePlayers.length
+      gameState.playersSpokenInRound.length === alivePlayers.length - 1
     ) {
       setStageState("vote");
     }
-
   }, [
     gameState.gameTranscript,
     gameState.players,
@@ -247,13 +254,25 @@ export default function HomePage() {
     player.die();
 
     let newTranscript = gameState.gameTranscript;
+    let newGameStatus = handleGameOver();
+
     if (gameState.stage === "day") {
       newTranscript += `\n These were the votes: ${votes}`;
 
-      narrator.narrateVotesResult(playerToKillName, player.getState().type, eligiblePlayers, newTranscript);
-
+      narrator.narrateVotesResult(
+        playerToKillName,
+        player.getState().type,
+        eligiblePlayers,
+        newTranscript,
+        newGameStatus
+      );
     } else if (gameState.stage === "night") {
-      narrator.narrateDeathEvent(playerToKillName, eligiblePlayers, newTranscript);
+      narrator.narrateDeathEvent(
+        playerToKillName,
+        eligiblePlayers,
+        newTranscript,
+        newGameStatus
+      );
     }
     newTranscript += `\nPlayer ${player.getState().name} was killed`;
 
@@ -268,15 +287,14 @@ export default function HomePage() {
     }));
 
     setStageState("next");
-    handleGameOver();
   }, [
     gameState.gameTranscript,
     gameState.killLog.length,
+    gameState.narrator,
     gameState.players,
     gameState.stage,
     handleGameOver,
   ]);
-
 
   const handleUpdateStage = useCallback((newStage: "day" | "night") => {
     setGameState((prev) => ({
