@@ -1,10 +1,20 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { AgentCenter } from '../components/AgentCenter';
-import { useMantineColorScheme } from '@mantine/core';
-import Game from './game/state';
-import Player, { PlayerState } from './game/player';
+import { Button, Card, Flex, useMantineColorScheme } from "@mantine/core";
+import { useCallback, useEffect, useState } from "react";
+import { AgentCenter } from "../components/AgentCenter";
+import Player, { PlayerState } from "./game/player";
+
+export type Game = {
+  stage: "day" | "night";
+  isGameOver: boolean;
+  gameStatus: string;
+  gameTranscript: string;
+  players: Player[];
+  killLog: { player: Player; round: number }[];
+  currentRound: number;
+  playersSpokenInRound: Player[];
+};
 
 const stock_players: PlayerState[] = [
   {
@@ -61,52 +71,199 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription:     "You are Dr. Evil, the eccentric villain from *Austin Powers*. You vote with sarcasm and flair, saying things like 'Darth Vader? He’s trying to out-evil me, and there’s only room for one.' Your reasoning is smug, absurd, and overly dramatic.",
     avatarUrl: "/images/dr-evil.png",
-    voiceId: "VGDSZWhOY95vApSv7YPI",
+    voiceId: "VGDSZWhOY95vApSv7YPI"
   },
 ];
 
 export default function HomePage() {
-  const [game, setGame] = useState<Game>(new Game({
-    stage: "day",
+  const [stageState, setStageState] = useState<"speak" | "vote" | "next">(
+    "speak"
+  );
+  const [gameState, setGameState] = useState({
+    stage: "day" as "day" | "night",
     isGameOver: false,
     gameStatus: "game not over",
     gameTranscript: "",
-    players: stock_players.map(p => new Player(p)),
-    killLog: [],
+    players: stock_players.map((p) => new Player(p)),
+    killLog: [] as { player: Player; round: number }[],
     currentRound: 1,
-    playersSpokenInRound: []
-  }))
+    playersSpokenInRound: [] as Player[],
+  });
 
   const { setColorScheme } = useMantineColorScheme();
 
   useEffect(() => {
-    if (game.getState().stage === 'day') setColorScheme('light')
-    if (game.getState().stage === 'night') setColorScheme('dark')
-  }, [game, setColorScheme])
+    if (gameState.stage === "day") setColorScheme("light");
+    if (gameState.stage === "night") setColorScheme("dark");
+  }, [gameState, setColorScheme]);
 
-  useEffect(() => {
-    const processPlayerSpeak = async () => {
-      if (game.getState().stage === 'day') {
-        console.log('here')
-        await game.playerSpeak()
+  const handleGameOver = useCallback(() => {
+    const mafia = gameState.players.filter(
+      (player) =>
+        player.getState().type === "mafia" && player.getState().isAlive
+    );
+    const citizens = gameState.players.filter(
+      (player) =>
+        player.getState().type === "citizen" && player.getState().isAlive
+    );
+
+    if (mafia.length === 0) {
+      setGameState((prev) => ({
+        ...prev,
+        isGameOver: true,
+        gameStatus: "citizens win",
+      }));
+    } else if (mafia.length >= citizens.length) {
+      setGameState((prev) => ({
+        ...prev,
+        isGameOver: true,
+        gameStatus: "mafia wins",
+      }));
+    }
+  }, [gameState.players]);
+
+  const handlePlayerSpeak = useCallback(async () => {
+    const pickPlayerToSpeak = () => {
+      if (gameState.players.length === gameState.playersSpokenInRound.length) {
+        return;
       }
+
+      let chosenPlayer;
+      while (!chosenPlayer) {
+        const randomPlayer =
+          gameState.players[
+            Math.floor(Math.random() * gameState.players.length)
+          ];
+
+        if (!gameState.playersSpokenInRound.includes(randomPlayer)) {
+          chosenPlayer = randomPlayer;
+        }
+      }
+
+      return chosenPlayer;
+    };
+
+    const player = pickPlayerToSpeak();
+
+    if (!player) {
+      return;
     }
 
-    processPlayerSpeak()
-  }, [game])
+    const textSpoken = await player.speak();
+
+    setGameState((prev) => ({
+      ...prev,
+      gameTranscript: prev.gameTranscript + `\n${textSpoken}`,
+      playersSpokenInRound: [
+        ...prev.playersSpokenInRound /* player who spoke */,
+      ],
+    }));
+    setStageState("vote");
+  }, [gameState.players, gameState.playersSpokenInRound]);
+
+  const handleTallyVotesAndKill = useCallback(() => {
+    let eligiblePlayers = gameState.players.filter(
+      (player) => player.getState().isAlive
+    );
+
+    // If it's night, don't kill mafia
+    if (gameState.stage === "night") {
+      eligiblePlayers = eligiblePlayers.filter(
+        (player) => player.getState().type !== "mafia"
+      );
+    }
+
+    const votes = gameState.players.map((player) => {
+      return player.voteToKill(eligiblePlayers, gameState.gameTranscript);
+    });
+
+    const playerToKill = votes.reduce((acc, curr) => {
+      acc[curr.getState().name] = acc[curr.getState().name] + 1 || 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const playerToKillName = Object.keys(playerToKill).reduce((acc, curr) => {
+      return playerToKill[curr] > playerToKill[acc] ? curr : acc;
+    });
+
+    const player = gameState.players.find(
+      (player) => player.getState().name === playerToKillName
+    );
+
+    if (!player) {
+      return;
+    }
+
+    player.die();
+
+    setGameState((prev) => ({
+      ...prev,
+      players: prev.players.map((player) => {
+        // Update player state based on votes
+        return player;
+      }),
+      killLog: [...prev.killLog, { player, round: gameState.killLog.length }],
+    }));
+
+    setStageState("next");
+    handleGameOver();
+  }, [
+    gameState.gameTranscript,
+    gameState.killLog.length,
+    gameState.players,
+    gameState.stage,
+    handleGameOver,
+  ]);
+
+  const handleUpdateStage = useCallback((newStage: "day" | "night") => {
+    setGameState((prev) => ({
+      ...prev,
+      stage: newStage,
+      currentRound:
+        newStage === "day" ? prev.currentRound + 1 : prev.currentRound,
+      playersSpokenInRound: newStage === "day" ? [] : prev.playersSpokenInRound,
+    }));
+
+    if (newStage === "day") {
+      setStageState("speak");
+    } else {
+      setStageState("vote");
+    }
+  }, []);
 
   return (
     <>
-      <AgentCenter game={game} />
+      <Flex direction="column" gap={8}>
+        <AgentCenter game={gameState} />
 
-      {/* <Group p="md" justify="space-between">
-        <Badge>
-          Your role: Mafia
-        </Badge>
-        <Badge color={stage === 'day' ? 'grape' : 'yellow'}>
-          {stage}
-        </Badge>
-      </Group> */}
+        {gameState.isGameOver && <Card>{gameState.gameStatus}</Card>}
+
+        {!gameState.isGameOver && (
+          <>
+            {stageState === "speak" && gameState.stage === "day" && (
+              <Button onClick={handlePlayerSpeak}>Hear someone speak</Button>
+            )}
+
+            {stageState === "vote" && gameState.stage === "day" && (
+              <Button onClick={handleTallyVotesAndKill}>Vote</Button>
+            )}
+            {stageState === "vote" && gameState.stage === "night" && (
+              <Button onClick={handleTallyVotesAndKill}>Vote</Button>
+            )}
+
+            {stageState === "next" && gameState.stage === "day" && (
+              <Button onClick={() => handleUpdateStage("night")}>
+                Go To Night Stage
+              </Button>
+            )}
+            {stageState === "next" && gameState.stage === "night" && (
+              <Button onClick={() => handleUpdateStage("day")}>
+                Go to Day Stage
+              </Button>
+            )}
+          </>
+        )}
+      </Flex>
     </>
   );
 }
