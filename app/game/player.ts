@@ -45,7 +45,8 @@ export default class Player {
   public speak = async () => {
     // prompt gpt to determine what to say based on transcript so far, if picked to speak
 
-    await this.callTextToSpeech("Hello mate!");
+    const { personalityDescription } = this.state;
+    await this.callTextToSpeech(personalityDescription);
 
     return "TEXT FROM GPT";
   };
