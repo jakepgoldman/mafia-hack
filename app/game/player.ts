@@ -2,6 +2,7 @@ import openAIClient from "../clients/openai";
 import { createSpeechPrompt } from "../prompts/SpeakPrompt";
 import { createAudioStreamFromText } from "../utils/tts_service";
 import { createNominatePrompt } from "../prompts/NominatePrompt";
+import { createIntroPrompt } from "../prompts/IntroPrompt";
 
 export type PlayerState = {
   name: string;
@@ -26,6 +27,38 @@ export default class Player {
   public die = () => {
     this.state.isAlive = false;
   };
+
+  public async introduce(players: Player[]) {
+    const { name, type, personalityDescription } = this.state;
+
+    const { systemMessage, userPrompt } = createIntroPrompt(
+      name,
+      type,
+      personalityDescription,
+      players.map((player) => player.getState().name)
+    );
+    const data = await openAIClient.beta.chat.completions.parse({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const value = data.choices[0].message.content;
+    if (value == null) {
+      throw new Error("no content")
+    }
+
+    const parsed = JSON.parse(value) as any as { intro: string };
+    console.log("[speak] Extracted response:", value);
+
+    // Call text-to-speech with the generated speech
+    await this.callTextToSpeech(parsed.intro);
+    console.log("[speak] Speech sent to text-to-speech service:", parsed.intro);
+
+  }
 
   public async voteToKill(players: Player[], transcript: string): Promise<Player> {
     // prompt gpt to ask for a player to vote for based on game context
