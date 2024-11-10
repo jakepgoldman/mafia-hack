@@ -1,11 +1,11 @@
-# Develop the prompt for the determine_speech prompt.
-#
-# This prompt is designed to query the LLM to determine what a player would strategically say in a game of Mafia.
+# determine_speech.py
 
 from openai import OpenAI
 import time
 from pathlib import Path
 import json
+
+from pydantic import BaseModel
 
 # load the key from openai_key.dat
 with open("openai_key.dat", "r") as f:
@@ -14,10 +14,15 @@ with open("openai_key.dat", "r") as f:
 client = OpenAI(api_key=api_key)
 
 
+class SpeechResponse(BaseModel):
+    reason: str
+    speech: str  # The player name or "none" if no one is nominated
+
+
 def render_determine_speech_prompt(player, player_type, backstory, transcript):
     """This prompt queries the LLM with the full transcript to see what they would strategically say in this situation.
 
-    First we concatenate a player, player type, and their backstory. then, we include the transcript of the game so far. Finally,
+    First we concatenate a player, player type, and their backstory. Then, we include the transcript of the game so far. Finally,
     We query the LLM, asking what such a player would do in this situation.
 
     What would this player say? Would they accuse someone, defend themselves, make up an innocuous lie, say something insidious, or
@@ -31,8 +36,13 @@ def render_determine_speech_prompt(player, player_type, backstory, transcript):
     """
     prompt = (
         f"Game Transcript: {transcript}\n"
-        f"Consider player named {player}. {player} is a {player_type} with the following backstory: {backstory}. "
-        f"What would this player, {player}, say? Give a short reason, and then end with `[[speak]]` followed by what they would say."
+        f"Consider a player named {player}, who is a {player_type} with the following backstory: {backstory}. "
+        f"Describe in JSON format what {player} would say in this situation. "
+        f"Respond only with JSON in the following structure:\n"
+        f"{{\n"
+        f'  "reason": "<reason for their choice>",\n'
+        f'  "speech": "<the player\'s actual speech>"\n'
+        f"}}"
     )
     return prompt
 
@@ -45,7 +55,7 @@ def query_mafia_speech(
     expected_output=None,
     debug=True,
 ):
-    """This function queries the LLM to determine how a player would vote in a game of Mafia.
+    """This function queries the LLM to determine how a player would speak in a game of Mafia.
 
     Args:
         player: The player who will speak
@@ -56,28 +66,28 @@ def query_mafia_speech(
 
     """
     prompt = render_determine_speech_prompt(player, player_type, backstory, transcript)
-    completion = client.chat.completions.create(
+    completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini",
         messages=[
             {
                 "role": "system",
                 "content": (
-                    "You are the dungeon master for a game of Mafia. You are trying to determine how a player would vote "
-                    "in a game of Mafia. In this game, the mafia win if most of the townspeople have been voted out, and "
-                    "the townspeople win if the mafia have all been voted out."
+                    "You are the dungeon master for a game of Mafia. You are trying to determine how a player would respond strategically "
+                    "in a game of Mafia. Please respond only with JSON."
                 ),
             },
             {"role": "user", "content": prompt},
         ],
+        response_format=SpeechResponse,
     )
 
-    # Determine the speech from the completion (anything after the `[[speak]]` token)
-    speech = completion.choices[0].message.content.split("[[speak]]")[1].strip()
+    response = completion.choices[0].message.parsed
 
     result = {
         "prompt": prompt,
         "response": completion.choices[0].message.content,
-        "speech": speech,
+        "reason": response.reason,
+        "speech": response.speech,
     }
 
     if debug:

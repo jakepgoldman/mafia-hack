@@ -1,6 +1,4 @@
-# demo_prompts_dev.py
-#
-# Executes demos of prompts used for the mafia game.
+# demo_vote_yes_no.py
 
 from vote_yes_no import query_mafia_vote
 from pathlib import Path
@@ -9,7 +7,7 @@ import yaml
 # Collect test cases for the vote_yes_no prompt
 test_files = Path("prompts/vote_yes_no/").glob("*.yml")
 
-# for each file, load the `setup` and the list of `test_cases
+# for each file, load the `setup` and the list of `test_cases`
 case_count = 0
 for test_file in test_files:
     test_file_data = yaml.safe_load(test_file.read_text())

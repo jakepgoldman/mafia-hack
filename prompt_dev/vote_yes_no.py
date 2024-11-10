@@ -1,17 +1,22 @@
-# Develop the prompt for the vote_yes_no prompt.
-#
-# This prompt is designed to query the LLM to determine whether a player would vote to toss another player in a game of Mafia.
+# vote_yes_no.py
 
 from openai import OpenAI
 import time
 from pathlib import Path
 import json
 
+from pydantic import BaseModel
+
 # load the key from openai_key.dat
 with open("openai_key.dat", "r") as f:
     api_key = f.readlines()[0].strip()
 
 client = OpenAI(api_key=api_key)
+
+
+class YesNoResponse(BaseModel):
+    reason: str
+    yesno: bool
 
 
 def render_determine_vote_prompt(
@@ -25,15 +30,19 @@ def render_determine_vote_prompt(
     Would they vote to toss the target player?
 
     Args:
-        player: The player who must decided their vote
+        player: The player who must decide their vote
         backstory: The backstory of the player voting
         transcript: The transcript of the game
         player_type: The type of player who is voting
     """
     prompt = (
         f"Game Transcript: {transcript}\n"
-        f"Consider player named {player}. {player} is a {player_type} with the following backstory: {backstory}. "
-        f"Would this player, {player}, vote to toss {target_player}? Give a short reason, and then a [[yes]] or [[no]] vote."
+        f"Consider a player named {player}, who is a {player_type} with the following backstory: {backstory}. "
+        f"Would this player, {player}, vote to toss {target_player}? Respond only in JSON format with the following structure:\n"
+        f"{{\n"
+        f'  "reason": "<reason for their choice>",\n'
+        f'  "vote": "<yes or no>"\n'
+        f"}}"
     )
     return prompt
 
@@ -50,7 +59,7 @@ def query_mafia_vote(
     """This function queries the LLM to determine how a player would vote in a game of Mafia.
 
     Args:
-        player: The player who must decided their vote
+        player: The player who must decide their vote
         player_type: The type of player who is voting
         backstory: The backstory of the player voting
         transcript: The transcript of the game
@@ -61,32 +70,29 @@ def query_mafia_vote(
     prompt = render_determine_vote_prompt(
         player, player_type, backstory, transcript, target_player
     )
-    completion = client.chat.completions.create(
+    completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini",
         messages=[
             {
                 "role": "system",
                 "content": (
                     "You are the dungeon master for a game of Mafia. You are trying to determine how a player would vote "
-                    "in a game of Mafia. In this game, the mafia win if most of the townspeople have been voted out, and "
-                    "the townspeople win if the mafia have all been voted out."
+                    "in a game of Mafia. Please respond only with JSON."
                 ),
             },
             {"role": "user", "content": prompt},
         ],
+        response_format=YesNoResponse,
     )
-
-    # Determine whether the answer was yes / no
-    if "[[yes]]" in completion.choices[0].message.content:
-        binary_response = "yes"
-    elif "[[no]]" in completion.choices[0].message.content:
-        binary_response = "no"
+    # Parse JSON response from the LLM output
+    response = completion.choices[0].message.parsed
 
     result = {
         "prompt": prompt,
-        "response": completion.choices[0].message.content,
+        "response": completion.choices[0].message.parsed.json(),
         "expected_output": expected_output,
-        "binary_response": binary_response,
+        "reason": response.reason,
+        "binary_response": response.yesno,
     }
 
     if debug:

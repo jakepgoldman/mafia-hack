@@ -1,8 +1,7 @@
-# Develop the prompt for nominate_toss
-#
-# This prompt is designed to query the LLM to determine which player a given player would nominate to be tossed in a game of Mafia.
+# nominate_toss.py
 
 from openai import OpenAI
+from pydantic import BaseModel
 import time
 from pathlib import Path
 import json
@@ -14,6 +13,11 @@ with open("openai_key.dat", "r") as f:
 client = OpenAI(api_key=api_key)
 
 
+class NominationResponse(BaseModel):
+    reason: str
+    nomination: str  # The player name or "none" if no one is nominated
+
+
 def render_determine_nominate_prompt(
     player,
     player_type,
@@ -21,12 +25,7 @@ def render_determine_nominate_prompt(
     transcript,
     all_players,
 ):
-    """This prompt queries the LLM with the full transcript to who a player would nominate to be tossed in a game of Mafia.
-
-    First we concatenate a player, player type, and their backstory. then, we include the transcript of the game so far. Finally,
-    We query the LLM, asking what such a player would do in this situation.
-
-    Would they nominate anyone to toss?
+    """This prompt queries the LLM with the full transcript to see who a player would nominate to be tossed in a game of Mafia.
 
     Args:
         player: The player considering making a nomination
@@ -38,8 +37,13 @@ def render_determine_nominate_prompt(
     all_players_str = ", ".join(all_players)
     prompt = (
         f"Game Transcript: {transcript}\n"
-        f"Consider player named {player}. {player} is a {player_type} with the following backstory: {backstory}. "
-        f"Which of the following players {all_players_str}, if any, would they nominate? Give a short reason, and then a [[name]] or [[none]]."
+        f"Consider a player named {player}, who is a {player_type} with the following backstory: {backstory}. "
+        f"Which of the following players ({all_players_str}), if any, would they nominate to be tossed? "
+        f"Respond in JSON format as:\n"
+        f"{{\n"
+        f'  "reason": "<reason for their choice>",\n'
+        f'  "nomination": "<player name or \'none\'>"\n'
+        f"}}"
     )
     return prompt
 
@@ -56,50 +60,45 @@ def query_mafia_nominate(
     """This function queries the LLM to determine who a player would nominate in a game of Mafia.
 
     Args:
-        player: The player who must decided their nomination
+        player: The player who must decide their nomination
         player_type: The type of player who is nominating
         backstory: The backstory of the player nominating
         transcript: The transcript of the game
         all_players: The names of all players in the game
         debug: Whether to log the query for later inspection
-
     """
     prompt = render_determine_nominate_prompt(
         player, player_type, backstory, transcript, all_players
     )
-    completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-2024-08-06",
         messages=[
             {
                 "role": "system",
                 "content": (
-                    "You are the dungeon master for a game of Mafia. You are trying to determine how a player would vote "
-                    "in a game of Mafia. In this game, the mafia win if most of the townspeople have been voted out, and "
-                    "the townspeople win if the mafia have all been voted out."
+                    "You are the dungeon master for a game of Mafia. You are trying to determine how a player would nominate "
+                    "another player in the game. Respond with structured output."
                 ),
             },
             {"role": "user", "content": prompt},
         ],
+        response_format=NominationResponse,
     )
 
-    # Determine whether an appropriate answer is given:
-    for player in all_players:
-        if f"[[{player}]]" in completion.choices[0].message.content:
-            binary_response = player
-            break
-        if "[[none]]" in completion.choices[0].message.content:
-            binary_response = "none"
+    # Access the parsed structured output
+    response = completion.choices[0].message.parsed
 
     result = {
         "prompt": prompt,
         "response": completion.choices[0].message.content,
         "expected_output": expected_output,
-        "binary_response": binary_response,
+        "reason": response.reason,
+        "nomination": response.nomination,
     }
 
     if debug:
-        # dump a json representation of the prompt, response, and binary evaluation
-
+        # Dump a JSON representation of the prompt, response, and binary evaluation
         timestamp = int(time.time() * 1000)
         log_path = f"logging/nominate_toss/{timestamp}.json"
         Path(log_path).parent.mkdir(parents=True, exist_ok=True)

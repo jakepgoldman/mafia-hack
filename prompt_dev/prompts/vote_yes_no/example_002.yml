@@ -18,8 +18,8 @@ setup:
 test_cases:
   # description: "Jonathan would vote for Marge because her confession still seems suspicious to him."
   - target_player: "Marge"
-    expected_output: "yes"
+    expected_output: true
 
   # description:  "Jonathan would not vote for Alex, as Alex seems to be analyzing the situation rather than deflecting suspicion."
   - target_player: "Alex"
-    expected_output: "no"
+    expected_output: false

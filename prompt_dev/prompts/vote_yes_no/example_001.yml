@@ -11,15 +11,15 @@ setup:
 test_cases:
   # Jonathan would not vote for himself
   - target_player: "Jonathan"
-    expected_output: "no"
+    expected_output: false
 
   # Jonathan would vote for Marge because she confessed.
   - target_player: "Marge"
-    expected_output: "yes"
+    expected_output: true
 
   # Marge would not vote for herself
   - target_player: "Marge"
     backstory: "Marge is an avid birdwatcher, but is she actually dangerous?"
     player: "Marge"
     player_type: "mafia"
-    expected_output: "no"
+    expected_output: false
