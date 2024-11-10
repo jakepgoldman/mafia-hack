@@ -16,7 +16,7 @@ export function createSpeechPrompt(
         `Game Transcript: ${transcript}\n` +
         `Consider a player named ${player}, who is a ${playerType} with the ` +
         `following backstory: ${backstory}. The following players are in the game ` +
-        `(${allPlayersStr}). Please be ultra concise with your answers, one sentence only. Describe in JSON format what ` +
+        `(${allPlayersStr}). Please be concise with your answers. 2-3 sentences max. Describe in JSON format what ` +
         `${player} would say in this situation. Respond only with JSON in the ` +
         `following structure:\n{\n  "reason": "<reason for their choice>",\n  ` +
         `"speech": "<the player's actual speech>"\n}`;
