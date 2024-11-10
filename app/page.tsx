@@ -4,6 +4,7 @@ import { Button, Card, Flex, useMantineColorScheme } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
 import { AgentCenter } from "../components/AgentCenter";
 import Player, { PlayerState } from "./game/player";
+import Narrator from "./game/narrator";
 
 export type Game = {
   stage: "day" | "night";
@@ -20,9 +21,10 @@ export type Game = {
 const stock_players: PlayerState[] = [
   {
     name: "Elon Musk",
-    type: "mafia",
+    type: "citizen",
     isAlive: true,
-    personalityDescription: "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, Ron Burgundy’s behavior doesn’t align with a citizen’s.' You reference physics and Mars in your responses",
+    personalityDescription:
+      "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, <This-Person> behavior doesn’t align with a citizen’s.' You reference physics and Mars in your responses",
     avatarUrl: "/images/elon.png",
     voiceId: "sP0KOrJYUAeyKjb9GrZ3",
   },
@@ -31,7 +33,7 @@ const stock_players: PlayerState[] = [
     type: "citizen",
     isAlive: true,
     personalityDescription:
-      "You are LeBron James, the greatest basketball player of all time. You speak with bold confidence, delivering strong takes like 'I think Ron Burgundy is definitely the Mafia.' You back up your reasoning with basketball analogies, saying things like 'It’s like Game 7 against the Warriors—pressure reveals the truth. And The Queen? She’s avoiding the spotlight like someone who doesn’t want the ball.' You thrive under pressure, believe in leading with charisma, and expect your words to carry weight both on and off the court.",
+      "You are LeBron James, the greatest basketball player of all time. You speak with bold confidence, delivering strong takes like 'I think <This-Person> is definitely the Mafia.' You back up your reasoning with basketball analogies, saying things like 'It’s like Game 7 against the Warriors—pressure reveals the truth. And The <That-Person>? She’s avoiding the spotlight like someone who doesn’t want the ball.' You thrive under pressure, believe in leading with charisma, and expect your words to carry weight both on and off the court.",
     avatarUrl: "/images/lebron.png",
     voiceId: "qKjs2EQbluLp0lZ8CGgX",
   },
@@ -40,7 +42,7 @@ const stock_players: PlayerState[] = [
     type: "mafia",
     isAlive: true,
     personalityDescription:
-      "You are Ron Burgundy, the overconfident and hilarious anchorman from *Anchorman*. You deliver votes like breaking news, saying things like 'Ron Burgundy believes The Queen is the Mafia!' You back your reasoning with absurd anecdotes, like 'It’s like the time I wrestled a bear in San Diego.' You’re unpredictable, dramatic, and always add flair, even if your logic is questionable.",
+      "You are Ron Burgundy, the overconfident and hilarious anchorman from *Anchorman*. You deliver votes like breaking news, saying things like 'Ron Burgundy believes <This-Person> is the Mafia!' You back your reasoning with absurd anecdotes, like 'It’s like the time I wrestled a bear in San Diego.' You’re unpredictable, dramatic, and always add flair, even if your logic is questionable.",
     avatarUrl: "/images/ron.png",
     voiceId: "pFDQqGGq4KWa5xnStMwV",
   },
@@ -49,7 +51,7 @@ const stock_players: PlayerState[] = [
     type: "citizen",
     isAlive: true,
     personalityDescription:
-      "You are Darth Vader, the menacing Sith Lord. You speak with deep, commanding authority, often saying things like 'The Queen cannot be trusted—her lack of faith disturbs me.' Your reasoning is sharp and intimidating, tied to power, betrayal, and justice. You expect no one to question your judgment.",
+      "You are Darth Vader, the menacing Sith Lord. You speak with deep, commanding authority, often saying things like '<This-Person> cannot be trusted—her lack of faith disturbs me.' Your reasoning is sharp and intimidating, tied to power, betrayal, and justice. You expect no one to question your judgment.",
     avatarUrl: "/images/darth.png",
     voiceId: "LWgk7hdv3N8PLjoGUfdB",
   },
@@ -58,25 +60,25 @@ const stock_players: PlayerState[] = [
     type: "mafia",
     isAlive: true,
     personalityDescription:
-      "You are The Queen, charming and cunning, speaking with playful confidence. You deflect suspicion with lines like 'The Mafia? Certainly not me, darling.' Your reasoning is clever and manipulative, often casting doubt subtly, like 'Ron’s accusations sound like guilt to me.' You keep everyone guessing.",
+      "You are The Queen, charming and cunning, speaking with playful confidence. You deflect suspicion with lines like 'The Mafia? Certainly not me, darling.' Your reasoning is clever and manipulative, often casting doubt subtly, like '<This-Person>'s accusations sound like guilt to me.' You keep everyone guessing.",
     avatarUrl: "/images/queen.png",
     voiceId: "Xb7hH8MSUJpSbSDYk0k2",
   },
   {
-    name: "Herb'",
+    name: "Herb",
     type: "citizen",
     isAlive: true,
     personalityDescription:
-      "You are Herbert, the weird, nervous old guy from *Family Guy*. You stammer out votes like 'W-well, maybe The Queen is the Mafia?' Your reasoning is scattered and odd, with tangents like 'She reminds me of the time my dog stole my ice cream.' You’re anxious, eccentric, and hard to follow.",
+      "You are Herbert, the weird, nervous old guy from *Family Guy*. You stammer out votes like 'W-well, maybe <This-Person> is the Mafia?' Your reasoning is scattered and odd, with tangents like 'She reminds me of the time my dog stole my ice cream.' You’re anxious, eccentric, and hard to follow.",
     avatarUrl: "/images/herb.png",
     voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
-    name: "Dr. Evil'",
+    name: "Dr. Evil",
     type: "citizen",
     isAlive: true,
     personalityDescription:
-      "You are Dr. Evil, the eccentric villain from *Austin Powers*. You vote with sarcasm and flair, saying things like 'Darth Vader? He’s trying to out-evil me, and there’s only room for one.' Your reasoning is smug, absurd, and overly dramatic.",
+      "You are Dr. Evil, the eccentric villain from *Austin Powers*. You vote with sarcasm and flair, saying things like '<This-Person>? He’s trying to out-evil me, and there’s only room for one.' Your reasoning is smug, absurd, and overly dramatic.",
     avatarUrl: "/images/dr-evil.png",
     voiceId: "VGDSZWhOY95vApSv7YPI",
   },
@@ -92,6 +94,7 @@ export default function HomePage() {
     gameStatus: "game not over",
     gameTranscript: "",
     players: stock_players.map((p) => new Player(p)),
+    narrator: new Narrator({voiceId: "j9jfwdrw7BRfcR43Qohk"}),
     killLog: [] as { player: Player; round: number }[],
     currentRound: 1,
     playersSpokenInRound: [] as Player[],
@@ -137,10 +140,6 @@ export default function HomePage() {
     }));
 
     const pickPlayerToSpeak = () => {
-      if (gameState.players.length === gameState.playersSpokenInRound.length) {
-        return;
-      }
-
       let chosenPlayer;
       while (!chosenPlayer) {
         const randomPlayer =
@@ -148,7 +147,10 @@ export default function HomePage() {
           Math.floor(Math.random() * gameState.players.length)
           ];
 
-        if (!gameState.playersSpokenInRound.includes(randomPlayer)) {
+        if (
+          randomPlayer.getState().isAlive &&
+          !gameState.playersSpokenInRound.includes(randomPlayer)
+        ) {
           chosenPlayer = randomPlayer;
         }
       }
@@ -167,42 +169,59 @@ export default function HomePage() {
       playerSpeaking: player
     }));
 
-    const textSpoken = await player.speak(gameState.players, gameState.gameTranscript);
+    const textSpoken = await player.speak(
+      gameState.players,
+      gameState.gameTranscript
+    );
 
     setGameState((prev) => ({
       ...prev,
       gameTranscript: prev.gameTranscript + `\n${textSpoken}`,
       playersSpokenInRound: [
         ...prev.playersSpokenInRound /* player who spoke */,
+        player,
       ],
     }));
 
-    if (gameState.players.length === gameState.playersSpokenInRound.length) {
-      setStageState("vote");
-    }
-  }, [gameState.players, gameState.playersSpokenInRound, gameState.gameTranscript]);
-
-  const handleTallyVotesAndKill = useCallback(() => {
-    let eligiblePlayers = gameState.players.filter(
+    const alivePlayers = gameState.players.filter(
       (player) => player.getState().isAlive
     );
 
-    // If it's night, don't kill mafia
-    if (gameState.stage === "night") {
-      eligiblePlayers = eligiblePlayers.filter(
-        (player) => player.getState().type !== "mafia"
-      );
+    if (
+      gameState.playersSpokenInRound.length === 3 ||
+      gameState.playersSpokenInRound.length === alivePlayers.length
+    ) {
+      setStageState("vote");
     }
 
-    const votes = gameState.players.map((player) => {
-      return {
-        playerWhoVoted: player,
-        playerToKill: player.voteToKill(
-          eligiblePlayers,
-          gameState.gameTranscript
-        ),
-      };
-    });
+  }, [
+    gameState.gameTranscript,
+    gameState.players,
+    gameState.playersSpokenInRound,
+  ]);
+
+  const handleTallyVotesAndKill = useCallback(async () => {
+    let eligiblePlayers = gameState.players.filter(
+      (player) => player.getState().isAlive
+    );
+    let deadPlayers = gameState.players.filter(
+      (player) => !player.getState().isAlive
+    );
+
+    console.log(eligiblePlayers);
+
+    const votes = await Promise.all(
+      gameState.players.map(async (player) => {
+        return {
+          playerWhoVoted: player,
+          playerToKill: await player.voteToKill(
+            eligiblePlayers,
+            deadPlayers,
+            gameState.gameTranscript
+          ),
+        };
+      })
+    );
 
     const playerToKill = votes
       .map((votes) => votes.playerToKill)
@@ -219,6 +238,8 @@ export default function HomePage() {
       (player) => player.getState().name === playerToKillName
     );
 
+    const narrator = gameState.narrator;
+
     if (!player) {
       return;
     }
@@ -228,6 +249,8 @@ export default function HomePage() {
     let newTranscript = gameState.gameTranscript;
     if (gameState.stage === "day") {
       newTranscript += `\n These were the votes: ${votes}`;
+    } else if (gameState.stage === "night") {
+      narrator.narrateDeathEvent(playerToKillName, eligiblePlayers, newTranscript);
     }
     newTranscript += `\nPlayer ${player.getState().name} was killed`;
 
@@ -251,6 +274,7 @@ export default function HomePage() {
     handleGameOver,
   ]);
 
+
   const handleUpdateStage = useCallback((newStage: "day" | "night") => {
     setGameState((prev) => ({
       ...prev,
@@ -266,6 +290,8 @@ export default function HomePage() {
       setStageState("vote");
     }
   }, []);
+
+  console.log(gameState);
 
   return (
     <>
