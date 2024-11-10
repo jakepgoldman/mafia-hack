@@ -249,6 +249,9 @@ export default function HomePage() {
     let newTranscript = gameState.gameTranscript;
     if (gameState.stage === "day") {
       newTranscript += `\n These were the votes: ${votes}`;
+
+      narrator.narrateVotesResult(playerToKillName, player.getState().type, eligiblePlayers, newTranscript);
+
     } else if (gameState.stage === "night") {
       narrator.narrateDeathEvent(playerToKillName, eligiblePlayers, newTranscript);
     }
