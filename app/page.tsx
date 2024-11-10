@@ -4,6 +4,7 @@ import { Button, Card, Flex, useMantineColorScheme } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
 import { AgentCenter } from "../components/AgentCenter";
 import Player, { PlayerState } from "./game/player";
+import Narrator from "./game/narrator";
 
 export type Game = {
   stage: "day" | "night";
@@ -92,6 +93,7 @@ export default function HomePage() {
     gameStatus: "game not over",
     gameTranscript: "",
     players: stock_players.map((p) => new Player(p)),
+    narrator: new Narrator({voiceId: "j9jfwdrw7BRfcR43Qohk"}),
     killLog: [] as { player: Player; round: number }[],
     currentRound: 1,
     playersSpokenInRound: [] as Player[],
@@ -223,6 +225,8 @@ export default function HomePage() {
       (player) => player.getState().name === playerToKillName
     );
 
+    const narrator = gameState.narrator;
+
     if (!player) {
       return;
     }
@@ -232,6 +236,8 @@ export default function HomePage() {
     let newTranscript = gameState.gameTranscript;
     if (gameState.stage === "day") {
       newTranscript += `\n These were the votes: ${votes}`;
+    } else if (gameState.stage === "night") {
+      narrator.narrateDeathEvent(playerToKillName, eligiblePlayers, newTranscript);
     }
     newTranscript += `\nPlayer ${player.getState().name} was killed`;
 
@@ -254,6 +260,7 @@ export default function HomePage() {
     gameState.stage,
     handleGameOver,
   ]);
+
 
   const handleUpdateStage = useCallback((newStage: "day" | "night") => {
     setGameState((prev) => ({
