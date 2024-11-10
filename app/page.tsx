@@ -14,6 +14,7 @@ export type Game = {
   killLog: { player: Player; round: number }[];
   currentRound: number;
   playersSpokenInRound: Player[];
+  playerSpeaking: Player | undefined
 };
 
 const stock_players: PlayerState[] = [
@@ -21,7 +22,7 @@ const stock_players: PlayerState[] = [
     name: "Elon Musk",
     type: "mafia",
     isAlive: true,
-    personalityDescription: "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, Ron Burgundy’s behavior doesn’t align with a citizen’s.' You reference physics and Mars in your responses",    
+    personalityDescription: "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, Ron Burgundy’s behavior doesn’t align with a citizen’s.' You reference physics and Mars in your responses",
     avatarUrl: "/images/elon.png",
     voiceId: "sP0KOrJYUAeyKjb9GrZ3",
   },
@@ -67,7 +68,7 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription:
       "You are Herbert, the weird, nervous old guy from *Family Guy*. You stammer out votes like 'W-well, maybe The Queen is the Mafia?' Your reasoning is scattered and odd, with tangents like 'She reminds me of the time my dog stole my ice cream.' You’re anxious, eccentric, and hard to follow.",
-    avatarUrl: "/images/herbert.png",
+    avatarUrl: "/images/herb.png",
     voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
@@ -94,6 +95,7 @@ export default function HomePage() {
     killLog: [] as { player: Player; round: number }[],
     currentRound: 1,
     playersSpokenInRound: [] as Player[],
+    playerSpeaking: undefined as Player | undefined
   });
 
   const { setColorScheme } = useMantineColorScheme();
@@ -129,6 +131,11 @@ export default function HomePage() {
   }, [gameState.players]);
 
   const handlePlayerSpeak = useCallback(async () => {
+    setGameState((prev) => ({
+      ...prev,
+      playerSpeaking: undefined
+    }));
+
     const pickPlayerToSpeak = () => {
       if (gameState.players.length === gameState.playersSpokenInRound.length) {
         return;
@@ -138,7 +145,7 @@ export default function HomePage() {
       while (!chosenPlayer) {
         const randomPlayer =
           gameState.players[
-            Math.floor(Math.random() * gameState.players.length)
+          Math.floor(Math.random() * gameState.players.length)
           ];
 
         if (!gameState.playersSpokenInRound.includes(randomPlayer)) {
@@ -155,6 +162,11 @@ export default function HomePage() {
       return;
     }
 
+    setGameState((prev) => ({
+      ...prev,
+      playerSpeaking: player
+    }));
+
     const textSpoken = await player.speak(gameState.players, gameState.gameTranscript);
 
     setGameState((prev) => ({
@@ -168,7 +180,7 @@ export default function HomePage() {
     if (gameState.players.length === gameState.playersSpokenInRound.length) {
       setStageState("vote");
     }
-  }, [gameState.players, gameState.playersSpokenInRound]);
+  }, [gameState.players, gameState.playersSpokenInRound, gameState.gameTranscript]);
 
   const handleTallyVotesAndKill = useCallback(() => {
     let eligiblePlayers = gameState.players.filter(
