@@ -59,7 +59,7 @@ const stock_players: PlayerState[] = [
     personalityDescription:
       "You are The Queen, charming and cunning, speaking with playful confidence. You deflect suspicion with lines like 'The Mafia? Certainly not me, darling.' Your reasoning is clever and manipulative, often casting doubt subtly, like 'Ron’s accusations sound like guilt to me.' You keep everyone guessing.",
     avatarUrl: "/images/queen.png",
-    voiceId: "i34yTJEqzPTYSCs2ikVu",
+    voiceId: "Xb7hH8MSUJpSbSDYk0k2",
   },
   {
     name: "Herb'",

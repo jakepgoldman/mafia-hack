@@ -6,7 +6,7 @@ import { Game } from "../app/page";
 
 export function AgentCenter({ game }: { game: Game }) {
   const handleClick = (player: Player) => {
-    player.speak();
+    player.introduce(game.players)
   };
   return (
     <Grid gutter="md">
