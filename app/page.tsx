@@ -8,12 +8,12 @@ import Player, { PlayerState } from './game/player';
 
 const stock_players: PlayerState[] = [
   {
-    name: "Jason Bourne",
+    name: "Herbert",
     type: "mafia",
     isAlive: true,
     personalityDescription: "James Bond but not actually",
     avatarUrl: "",
-    voiceId: "",
+    voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
     name: "Ricky Bobby",
@@ -21,7 +21,7 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription: "James Bond but not actually",
     avatarUrl: "",
-    voiceId: "",
+    voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
     name: "Austin Powers",
@@ -29,7 +29,7 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription: "James Bond but not actually",
     avatarUrl: "",
-    voiceId: "",
+    voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
     name: "Dr. Evil",
@@ -37,7 +37,7 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription: "James Bond but not actually",
     avatarUrl: "",
-    voiceId: "",
+    voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
     name: "Jean Girard",
@@ -45,7 +45,7 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription: "James Bond but not actually",
     avatarUrl: "",
-    voiceId: "",
+    voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
     name: "Fat Bastard",
@@ -53,7 +53,7 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription: "James Bond but not actually",
     avatarUrl: "",
-    voiceId: "",
+    voiceId: "Kz0DA4tCctbPjLay2QT1",
   }
 ]
 
@@ -66,6 +66,7 @@ export default function HomePage() {
     players: stock_players.map(p => new Player(p)),
     killLog: [],
     currentRound: 1,
+    playersSpokenInRound: []
   }))
 
   const { setColorScheme } = useMantineColorScheme();
@@ -75,7 +76,16 @@ export default function HomePage() {
     if (game.getState().stage === 'night') setColorScheme('dark')
   }, [game, setColorScheme])
 
+  useEffect(() => {
+    const processPlayerSpeak = async () => {
+      if (game.getState().stage === 'day') {
+        console.log('here')
+        await game.playerSpeak()
+      }
+    }
 
+    processPlayerSpeak()
+  }, [game])
 
   return (
     <>

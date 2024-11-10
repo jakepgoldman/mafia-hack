@@ -8,6 +8,7 @@ export type GameState = {
   players: Player[];
   killLog: { player: Player; round: number }[];
   currentRound: number;
+  playersSpokenInRound: Player[];
 };
 
 export default class Game {
@@ -26,34 +27,50 @@ export default class Game {
   }
 
   public getState = () => {
-    return {
-      stage: this.state.stage,
-      isGameOver: this.state.isGameOver,
-      ganeStatus: this.state.gameStatus,
-      killLog: this.state.killLog,
-      ganmeTranscript: this.state.gameTranscript,
-      players: this.state.players.map((player) => player.getState()),
-    };
+    return this.state;
   };
 
   public updateTranscript = (transcript: string) => {
     this.state.gameTranscript = this.state.gameTranscript + "\n" + transcript;
   };
+  public addPlayerSpokenInRound = (player: Player) => {
+    this.state.playersSpokenInRound.push(player);
+  };
 
   private pickPlayerToSpeak = () => {
     // maybe use gpt to determine who should speak
+    if (this.state.players.length === this.state.playersSpokenInRound.length) {
+      return;
+    }
+
+    let chosenPlayer;
+    while (!chosenPlayer) {
+      const randomPlayer =
+        this.state.players[
+          Math.floor(Math.random() * this.state.players.length)
+        ];
+
+      if (!this.state.playersSpokenInRound.includes(randomPlayer)) {
+        chosenPlayer = randomPlayer;
+      }
+    }
 
     // pick a player to speak
-    return this.state.players[
-      Math.floor(Math.random() * this.state.players.length)
-    ];
+    return chosenPlayer;
   };
 
   public playerSpeak = async () => {
     const player = this.pickPlayerToSpeak();
+
+    if (!player) {
+      return;
+    }
+
     const textSpoken = await player.speak();
 
     this.updateTranscript(textSpoken);
+
+    this.addPlayerSpokenInRound(player);
   };
 
   private tallyVotesOfWhoToKill = () => {
