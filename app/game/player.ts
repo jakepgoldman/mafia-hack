@@ -97,16 +97,18 @@ export default class Player {
 
     console.log("[speak] OpenAI API response:", data);
 
-    if (parsed.nomination === "none") {
-      throw new Error("no nomination");
-    }
-
     const player = players.find(
-      (p: Player) => p.getState().name === parsed.nomination
+      (p: Player) =>
+        p.getState().name.trim().toLowerCase() ===
+        parsed.nomination.trim().toLowerCase()
     );
 
     if (!player) {
-      throw new Error("Player not found");
+      throw new Error(
+        `Player not found + ${parsed.nomination} amongst ${players.map(
+          (p) => p.getState().name
+        )}`
+      );
     }
 
     return player;
