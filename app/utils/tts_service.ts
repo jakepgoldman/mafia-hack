@@ -1,4 +1,4 @@
-import { ElevenLabsClient } from "elevenlabs";
+import { ElevenLabsClient, play } from "elevenlabs";
 import * as dotenv from "dotenv";
 
 dotenv.config();
