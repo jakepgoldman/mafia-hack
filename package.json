@@ -13,6 +13,7 @@
     "@mantine/hooks": "7.13.5",
     "dotenv": "^16.4.5",
     "elevenlabs": "^0.18.0",
+    "lumaai": "^1.1.0",
     "next": "15.0.1",
     "openai": "^4.71.1",
     "react": "18.3.1",
