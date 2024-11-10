@@ -1,5 +1,5 @@
 import openAIClient from "../clients/openai";
-import { createPlayerKilledStory } from "../prompts/NarratorPrompt";
+import { createPlayerKilledByNomination, createPlayerKilledStory } from "../prompts/NarratorPrompt";
 import { createAudioStreamFromText } from "../utils/tts_service";
 import Player from "./player";
 
@@ -44,6 +44,34 @@ export default class Narrator {
         console.log("[speak] Speech sent to text-to-speech service:", parsed.narration);
         await this.callTextToSpeech(parsed.narration);
     };
+
+    public async narrateVotesResult(killedPlayerName: string, killedPlayerType: string, remainingPlayers: Player[], transcript: string) {
+        const { systemMessage, userPrompt } = createPlayerKilledByNomination(
+            killedPlayerName,
+            killedPlayerType,
+            remainingPlayers.map((player) => player.getState().name),
+            transcript
+        );
+
+        const data = await openAIClient.beta.chat.completions.parse({
+            model: "gpt-4o-2024-08-06",
+            messages: [
+                { role: "system", content: systemMessage },
+                { role: "user", content: userPrompt },
+            ],
+            response_format: { type: "json_object" },
+        });
+
+        const value = data.choices[0].message.content;
+        if (value == null) {
+            throw new Error("no content")
+        }
+        const parsed = JSON.parse(value) as any as { narration: string };
+
+        console.log("[speak] Speech sent to text-to-speech service:", parsed.narration);
+        await this.callTextToSpeech(parsed.narration);
+
+    }
     
     private async callTextToSpeech(text: string): Promise<void> {
         try {
