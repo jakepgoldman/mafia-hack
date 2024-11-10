@@ -1,46 +1,50 @@
 export function createPlayerKilledStory(
-    nameOfPlayerKilled: string, 
-    remainingPlayers: string[],
-    transcript: string
+  nameOfPlayerKilled: string,
+  remainingPlayers: string[],
+  transcript: string,
+  gameStatus: string
 ) {
-    const remainingPlayersStr = remainingPlayers.join(", ");
-    const systemMessage =
-        `You are the moderator of a mafia game. You speak slowly and powerfully, like Mufasa from Lion King. You present the findings of the game in a humorous way.`;
+  const remainingPlayersStr = remainingPlayers.join(", ");
+  const systemMessage = `You are the moderator of a mafia game. You speak slowly and powerfully, like Mufasa from Lion King. You present the findings of the game in a humorous way.`;
 
-    const userPrompt =
-        // `The game has just returned to day, and the mafia have chosen to kill ${nameOfPlayerKilled}. `
-        `Here is the trancript of what has happened so far up to the current moment: ${transcript}` +
-        `Come up with a funny death story that relates ${nameOfPlayerKilled} being killed.` +
-        `The remaining players are: ${remainingPlayersStr}. Please be concise. 2-3 sentences maximum` +
-        `Respond in JSON format as:\n{\n  "narration": ` +
-        `"<game narration speech>"}`;
+  const userPrompt =
+    // `The game has just returned to day, and the mafia have chosen to kill ${nameOfPlayerKilled}. `
+    `Here is the trancript of what has happened so far up to the current moment: ${transcript}` +
+    `Come up with a funny death story that relates ${nameOfPlayerKilled} being killed.` +
+    `The remaining players are: ${remainingPlayersStr}.` +
+    `The game status is: ${gameStatus}. If the game has ended and either the mafia won or civilians won, make that announcement. If the game is not over, don't announce that.` +
+    `Please be concise. 2-3 sentences maximum` +
+    `Respond in JSON format as:\n{\n  "narration": ` +
+    `"<game narration speech>"}`;
 
-    return {
-        systemMessage,
-        userPrompt
-    };
+  return {
+    systemMessage,
+    userPrompt,
+  };
 }
 
 export function createPlayerKilledByNomination(
-    nameOfPlayerKilled: string, 
-    typeOfPlayerKilled: string,
-    remainingPlayers: string[],
-    transcript: string
+  nameOfPlayerKilled: string,
+  typeOfPlayerKilled: string,
+  remainingPlayers: string[],
+  transcript: string,
+  gameStatus: string
 ) {
-    const remainingPlayersStr = remainingPlayers.join(", ");
-    const systemMessage =
-        `You are the moderator of a mafia game. You speak slowly and powerfully, like Mufasa from Lion King. You present the findings of the game in a humorous way.`;
+  const remainingPlayersStr = remainingPlayers.join(", ");
+  const systemMessage = `You are the moderator of a mafia game. You speak slowly and powerfully, like Mufasa from Lion King. You present the findings of the game in a humorous way.`;
 
-    const userPrompt =
-        // `The game has just returned to day, and the mafia have chosen to kill ${nameOfPlayerKilled}. `
-        `Here is the trancript of what has happened so far up to the current moment: ${transcript}` +
-        `Explain that ${nameOfPlayerKilled} was voted killed, and that they are type ${typeOfPlayerKilled}` +
-        `The remaining players are: ${remainingPlayersStr}. Please be concise. 2-3 sentences maximum` +
-        `Respond in JSON format as:\n{\n  "narration": ` +
-        `"<game narration speech>"}`;
+  const userPrompt =
+    // `The game has just returned to day, and the mafia have chosen to kill ${nameOfPlayerKilled}. `
+    `Here is the trancript of what has happened so far up to the current moment: ${transcript}` +
+    `Explain that ${nameOfPlayerKilled} was voted killed, and that they are type ${typeOfPlayerKilled}` +
+    `The remaining players are: ${remainingPlayersStr}.` +
+    `The game status is: ${gameStatus}. If the game has ended and either the mafia won or civilians won, make that announcement. If the game is not over, don't announce that.` +
+    `Please be concise. 2-3 sentences maximum` +
+    `Respond in JSON format as:\n{\n  "narration": ` +
+    `"<game narration speech>"}`;
 
-    return {
-        systemMessage,
-        userPrompt
-    };
+  return {
+    systemMessage,
+    userPrompt,
+  };
 }
