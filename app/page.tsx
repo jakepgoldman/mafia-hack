@@ -169,7 +169,14 @@ export default function HomePage() {
       ],
     }));
 
-    if (gameState.playersSpokenInRound.length === 3) {
+    const alivePlayers = gameState.players.filter(
+      (player) => player.getState().isAlive
+    );
+
+    if (
+      gameState.playersSpokenInRound.length === 3 ||
+      gameState.playersSpokenInRound.length === alivePlayers.length
+    ) {
       setStageState("vote");
     }
   }, [
@@ -182,6 +189,9 @@ export default function HomePage() {
     let eligiblePlayers = gameState.players.filter(
       (player) => player.getState().isAlive
     );
+    let deadPlayers = gameState.players.filter(
+      (player) => !player.getState().isAlive
+    );
 
     console.log(eligiblePlayers);
 
@@ -191,6 +201,7 @@ export default function HomePage() {
           playerWhoVoted: player,
           playerToKill: await player.voteToKill(
             eligiblePlayers,
+            deadPlayers,
             gameState.gameTranscript
           ),
         };
