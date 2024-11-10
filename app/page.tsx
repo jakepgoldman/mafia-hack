@@ -21,7 +21,8 @@ const stock_players: PlayerState[] = [
     name: "Elon Musk",
     type: "mafia",
     isAlive: true,
-    personalityDescription: "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, Ron Burgundy’s behavior doesn’t align with a citizen’s.' You reference physics and Mars in your responses",    
+    personalityDescription:
+      "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, Ron Burgundy’s behavior doesn’t align with a citizen’s.' You reference physics and Mars in your responses",
     avatarUrl: "/images/elon.png",
     voiceId: "sP0KOrJYUAeyKjb9GrZ3",
   },
@@ -62,7 +63,7 @@ const stock_players: PlayerState[] = [
     voiceId: "Xb7hH8MSUJpSbSDYk0k2",
   },
   {
-    name: "Herb'",
+    name: "Herb",
     type: "citizen",
     isAlive: true,
     personalityDescription:
@@ -71,7 +72,7 @@ const stock_players: PlayerState[] = [
     voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
-    name: "Dr. Evil'",
+    name: "Dr. Evil",
     type: "citizen",
     isAlive: true,
     personalityDescription:
@@ -130,10 +131,6 @@ export default function HomePage() {
 
   const handlePlayerSpeak = useCallback(async () => {
     const pickPlayerToSpeak = () => {
-      if (gameState.players.length === gameState.playersSpokenInRound.length) {
-        return;
-      }
-
       let chosenPlayer;
       while (!chosenPlayer) {
         const randomPlayer =
@@ -155,22 +152,30 @@ export default function HomePage() {
       return;
     }
 
-    const textSpoken = await player.speak(gameState.players, gameState.gameTranscript);
+    const textSpoken = await player.speak(
+      gameState.players,
+      gameState.gameTranscript
+    );
 
     setGameState((prev) => ({
       ...prev,
       gameTranscript: prev.gameTranscript + `\n${textSpoken}`,
       playersSpokenInRound: [
         ...prev.playersSpokenInRound /* player who spoke */,
+        player,
       ],
     }));
 
-    if (gameState.players.length === gameState.playersSpokenInRound.length) {
+    if (gameState.playersSpokenInRound.length === 3) {
       setStageState("vote");
     }
-  }, [gameState.players, gameState.playersSpokenInRound]);
+  }, [
+    gameState.gameTranscript,
+    gameState.players,
+    gameState.playersSpokenInRound,
+  ]);
 
-  const handleTallyVotesAndKill = useCallback(() => {
+  const handleTallyVotesAndKill = useCallback(async () => {
     let eligiblePlayers = gameState.players.filter(
       (player) => player.getState().isAlive
     );
@@ -182,15 +187,17 @@ export default function HomePage() {
       );
     }
 
-    const votes = gameState.players.map((player) => {
-      return {
-        playerWhoVoted: player,
-        playerToKill: player.voteToKill(
-          eligiblePlayers,
-          gameState.gameTranscript
-        ),
-      };
-    });
+    const votes = await Promise.all(
+      gameState.players.map(async (player) => {
+        return {
+          playerWhoVoted: player,
+          playerToKill: await player.voteToKill(
+            eligiblePlayers,
+            gameState.gameTranscript
+          ),
+        };
+      })
+    );
 
     const playerToKill = votes
       .map((votes) => votes.playerToKill)
@@ -254,6 +261,8 @@ export default function HomePage() {
       setStageState("vote");
     }
   }, []);
+
+  console.log(gameState);
 
   return (
     <>

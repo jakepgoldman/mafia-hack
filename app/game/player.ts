@@ -48,7 +48,7 @@ export default class Player {
 
     const value = data.choices[0].message.content;
     if (value == null) {
-      throw new Error("no content")
+      throw new Error("no content");
     }
 
     const parsed = JSON.parse(value) as any as { intro: string };
@@ -57,10 +57,12 @@ export default class Player {
     // Call text-to-speech with the generated speech
     await this.callTextToSpeech(parsed.intro);
     console.log("[speak] Speech sent to text-to-speech service:", parsed.intro);
-
   }
 
-  public async voteToKill(players: Player[], transcript: string): Promise<Player> {
+  public async voteToKill(
+    players: Player[],
+    transcript: string
+  ): Promise<Player> {
     // prompt gpt to ask for a player to vote for based on game context
 
     // get the player to vote for to kill
@@ -85,25 +87,46 @@ export default class Player {
 
     const value = data.choices[0].message.content;
     if (value == null) {
-      throw new Error("no content")
+      throw new Error("no content");
     }
 
-    const parsed = JSON.parse(value) as any as { reason: string, nomination: string };
+    const parsed = JSON.parse(value) as any as {
+      reason: string;
+      nomination: string;
+    };
 
     console.log("[speak] OpenAI API response:", data);
 
-    const player = players.find((p: Player) => player.getState().name);
+    if (parsed.nomination === "none") {
+      throw new Error("no nomination");
+    }
+
+    const player = players.find(
+      (p: Player) => p.getState().name === parsed.nomination
+    );
+
+    if (!player) {
+      throw new Error("Player not found");
+    }
+
     return player;
-  };
+  }
 
   public speak = async (players: Player[], transcript: string) => {
     try {
       // Log the start of the function
-      console.log("[speak] Function invoked with parameters:", { players, transcript });
+      console.log("[speak] Function invoked with parameters:", {
+        players,
+        transcript,
+      });
 
       // Extract the current state
       const { name, type, personalityDescription } = this.state;
-      console.log("[speak] Current state:", { name, type, personalityDescription });
+      console.log("[speak] Current state:", {
+        name,
+        type,
+        personalityDescription,
+      });
 
       // Create the GPT prompt
       const [systemMessage, userPrompt] = createSpeechPrompt(
@@ -113,7 +136,10 @@ export default class Player {
         transcript,
         players.map((player) => player.getState().name)
       );
-      console.log("[speak] Generated system message and user prompt:", { systemMessage, userPrompt });
+      console.log("[speak] Generated system message and user prompt:", {
+        systemMessage,
+        userPrompt,
+      });
 
       // Call the OpenAI API
       const data = await openAIClient.beta.chat.completions.parse({
@@ -129,15 +155,21 @@ export default class Player {
       // Extract and log the speech output
       const value = data.choices[0].message.content;
       if (value == null) {
-        throw new Error("no content")
+        throw new Error("no content");
       }
 
-      const parsed = JSON.parse(value) as any as { reason: string, speech: string };
+      const parsed = JSON.parse(value) as any as {
+        reason: string;
+        speech: string;
+      };
       console.log("[speak] Extracted response:", value);
 
       // Call text-to-speech with the generated speech
       await this.callTextToSpeech(parsed.speech);
-      console.log("[speak] Speech sent to text-to-speech service:", parsed.speech);
+      console.log(
+        "[speak] Speech sent to text-to-speech service:",
+        parsed.speech
+      );
 
       return parsed.speech;
     } catch (error) {
@@ -146,7 +178,6 @@ export default class Player {
       throw error;
     }
   };
-
 
   // call this
   private async callTextToSpeech(text: string): Promise<void> {
