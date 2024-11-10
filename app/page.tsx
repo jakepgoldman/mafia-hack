@@ -15,6 +15,7 @@ export type Game = {
   killLog: { player: Player; round: number }[];
   currentRound: number;
   playersSpokenInRound: Player[];
+  playerSpeaking: Player | undefined
 };
 
 const stock_players: PlayerState[] = [
@@ -69,7 +70,7 @@ const stock_players: PlayerState[] = [
     isAlive: true,
     personalityDescription:
       "You are Herbert, the weird, nervous old guy from *Family Guy*. You stammer out votes like 'W-well, maybe <This-Person> is the Mafia?' Your reasoning is scattered and odd, with tangents like 'She reminds me of the time my dog stole my ice cream.' You’re anxious, eccentric, and hard to follow.",
-    avatarUrl: "/images/herbert.png",
+    avatarUrl: "/images/herb.png",
     voiceId: "Kz0DA4tCctbPjLay2QT1",
   },
   {
@@ -97,6 +98,7 @@ export default function HomePage() {
     killLog: [] as { player: Player; round: number }[],
     currentRound: 1,
     playersSpokenInRound: [] as Player[],
+    playerSpeaking: undefined as Player | undefined
   });
 
   const { setColorScheme } = useMantineColorScheme();
@@ -132,12 +134,17 @@ export default function HomePage() {
   }, [gameState.players]);
 
   const handlePlayerSpeak = useCallback(async () => {
+    setGameState((prev) => ({
+      ...prev,
+      playerSpeaking: undefined
+    }));
+
     const pickPlayerToSpeak = () => {
       let chosenPlayer;
       while (!chosenPlayer) {
         const randomPlayer =
           gameState.players[
-            Math.floor(Math.random() * gameState.players.length)
+          Math.floor(Math.random() * gameState.players.length)
           ];
 
         if (
@@ -156,6 +163,11 @@ export default function HomePage() {
     if (!player) {
       return;
     }
+
+    setGameState((prev) => ({
+      ...prev,
+      playerSpeaking: player
+    }));
 
     const textSpoken = await player.speak(
       gameState.players,
@@ -181,6 +193,7 @@ export default function HomePage() {
     ) {
       setStageState("vote");
     }
+
   }, [
     gameState.gameTranscript,
     gameState.players,
