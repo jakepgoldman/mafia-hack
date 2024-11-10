@@ -1,4 +1,7 @@
+import openAIClient from "../clients/openai";
+import { createSpeechPrompt } from "../prompts/SpeakPrompt";
 import { createAudioStreamFromText } from "../utils/tts_service";
+import { createNominatePrompt } from "../prompts/NominatePrompt";
 
 export type PlayerState = {
   name: string;
@@ -24,32 +27,93 @@ export default class Player {
     this.state.isAlive = false;
   };
 
-  public voteToKill: (players: Player[], transcript: string) => Player = (
-    players
-  ) => {
+  public async voteToKill(players: Player[], transcript: string): Promise<Player> {
     // prompt gpt to ask for a player to vote for based on game context
 
     // get the player to vote for to kill
-    return players[0];
+    const { name, type, personalityDescription } = this.state;
+
+    const { systemMessage, userPrompt } = createNominatePrompt(
+      name,
+      type,
+      personalityDescription,
+      transcript,
+      players.map((player) => player.getState().name)
+    );
+
+    const data = await openAIClient.beta.chat.completions.parse({
+      model: "gpt-4o-2024-08-06",
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const value = data.choices[0].message.content;
+    if (value == null) {
+      throw new Error("no content")
+    }
+
+    const parsed = JSON.parse(value) as any as { reason: string, nomination: string };
+
+    console.log("[speak] OpenAI API response:", data);
+
+    const player = players.find((p: Player) => player.getState().name);
+    return player;
   };
 
-  public nominateToKill: (players: Player[], transcript: string) => Player = (
-    players
-  ) => {
-    // prompt gpt to ask for a player to vote for based on game context
+  public speak = async (players: Player[], transcript: string) => {
+    try {
+      // Log the start of the function
+      console.log("[speak] Function invoked with parameters:", { players, transcript });
 
-    // get the player to vote for to save
-    return players[0];
+      // Extract the current state
+      const { name, type, personalityDescription } = this.state;
+      console.log("[speak] Current state:", { name, type, personalityDescription });
+
+      // Create the GPT prompt
+      const [systemMessage, userPrompt] = createSpeechPrompt(
+        name,
+        type,
+        personalityDescription,
+        transcript,
+        players.map((player) => player.getState().name)
+      );
+      console.log("[speak] Generated system message and user prompt:", { systemMessage, userPrompt });
+
+      // Call the OpenAI API
+      const data = await openAIClient.beta.chat.completions.parse({
+        model: "gpt-4o-2024-08-06",
+        messages: [
+          { role: "system", content: systemMessage },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+      console.log("[speak] OpenAI API response:", data);
+
+      // Extract and log the speech output
+      const value = data.choices[0].message.content;
+      if (value == null) {
+        throw new Error("no content")
+      }
+
+      const parsed = JSON.parse(value) as any as { reason: string, speech: string };
+      console.log("[speak] Extracted response:", value);
+
+      // Call text-to-speech with the generated speech
+      await this.callTextToSpeech(parsed.speech);
+      console.log("[speak] Speech sent to text-to-speech service:", parsed.speech);
+
+      return parsed.speech;
+    } catch (error) {
+      // Log errors
+      console.error("[speak] Error encountered:", error);
+      throw error;
+    }
   };
 
-  public speak = async () => {
-    // prompt gpt to determine what to say based on transcript so far, if picked to speak
-
-    const { personalityDescription } = this.state;
-    await this.callTextToSpeech(personalityDescription);
-
-    return "TEXT FROM GPT";
-  };
 
   // call this
   private async callTextToSpeech(text: string): Promise<void> {

@@ -21,8 +21,7 @@ const stock_players: PlayerState[] = [
     name: "Elon Musk",
     type: "mafia",
     isAlive: true,
-    personalityDescription:
-      "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, Ron Burgundy’s behavior doesn’t align with a citizen’s.' You reference physics and Mars, like 'The Queen’s actions don’t add up to a clean rocket arc.",
+    personalityDescription: "You are Elon Musk, the fiercely logical entrepreneur. You vote based on evidence, saying things like 'Statistically, Ron Burgundy’s behavior doesn’t align with a citizen’s.' You reference physics and Mars in your responses",    
     avatarUrl: "/images/elon.png",
     voiceId: "sP0KOrJYUAeyKjb9GrZ3",
   },
@@ -60,7 +59,7 @@ const stock_players: PlayerState[] = [
     personalityDescription:
       "You are The Queen, charming and cunning, speaking with playful confidence. You deflect suspicion with lines like 'The Mafia? Certainly not me, darling.' Your reasoning is clever and manipulative, often casting doubt subtly, like 'Ron’s accusations sound like guilt to me.' You keep everyone guessing.",
     avatarUrl: "/images/queen.png",
-    voiceId: "QYnGzKou48JismUzBHvo",
+    voiceId: "i34yTJEqzPTYSCs2ikVu",
   },
   {
     name: "Herb'",
@@ -156,7 +155,7 @@ export default function HomePage() {
       return;
     }
 
-    const textSpoken = await player.speak();
+    const textSpoken = await player.speak(gameState.players, gameState.gameTranscript);
 
     setGameState((prev) => ({
       ...prev,

@@ -1,4 +1,4 @@
-function createNominatePrompt(
+export function createNominatePrompt(
     player: string, 
     playerType: string, 
     backstory: string, 
