@@ -1,31 +1,21 @@
-function createSpeakPrompt(
+function createSpeechPrompt(
     player: string, 
     playerType: string, 
     backstory: string, 
     transcript: string
-) {
-    const prompt = `Game Transcript: ${transcript}\nConsider player named ${player}. ` +
-        `${player} is a ${playerType} with the following backstory: ${backstory}. ` +
-        `What would this player, ${player}, say? Give a short reason, and then end ` +
-        `with [[speak]] followed by what they would say.`;
+): [string, string] {
+    const systemMessage = 
+        "You are the dungeon master for a game of Mafia. You are trying to " +
+        "determine how a player would respond strategically in a game of Mafia. " +
+        "Please respond only with JSON.";
 
-    const payload = {
-        // Add model to payload before invoking
-        // model: "gpt-4o-mini",
-        messages: [
-            {
-                role: "system",
-                content: "You are the dungeon master for a game of Mafia. You are trying " +
-                    "to determine how a player would vote in a game of Mafia. In this " +
-                    "game, the mafia win if most of the townspeople have been voted out, " +
-                    "and the townspeople win if the mafia have all been voted out."
-            },
-            {
-                role: "user",
-                content: prompt
-            }
-        ]
-    };
+    const userPrompt = 
+        `Game Transcript: ${transcript}\n` +
+        `Consider a player named ${player}, who is a ${playerType} with the ` +
+        `following backstory: ${backstory}. Describe in JSON format what ` +
+        `${player} would say in this situation. Respond only with JSON in the ` +
+        `following structure:\n{\n  "reason": "<reason for their choice>",\n  ` +
+        `"speech": "<the player's actual speech>"\n}`;
 
-    return payload;
+    return [systemMessage, userPrompt];
 }
