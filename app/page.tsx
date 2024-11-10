@@ -174,13 +174,21 @@ export default function HomePage() {
     }
 
     const votes = gameState.players.map((player) => {
-      return player.voteToKill(eligiblePlayers, gameState.gameTranscript);
+      return {
+        playerWhoVoted: player,
+        playerToKill: player.voteToKill(
+          eligiblePlayers,
+          gameState.gameTranscript
+        ),
+      };
     });
 
-    const playerToKill = votes.reduce((acc, curr) => {
-      acc[curr.getState().name] = acc[curr.getState().name] + 1 || 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const playerToKill = votes
+      .map((votes) => votes.playerToKill)
+      .reduce((acc, curr) => {
+        acc[curr.getState().name] = acc[curr.getState().name] + 1 || 1;
+        return acc;
+      }, {} as Record<string, number>);
 
     const playerToKillName = Object.keys(playerToKill).reduce((acc, curr) => {
       return playerToKill[curr] > playerToKill[acc] ? curr : acc;
@@ -196,12 +204,19 @@ export default function HomePage() {
 
     player.die();
 
+    let newTranscript = gameState.gameTranscript;
+    if (gameState.stage === "day") {
+      newTranscript += `\n These were the votes: ${votes}`;
+    }
+    newTranscript += `\nPlayer ${player.getState().name} was killed`;
+
     setGameState((prev) => ({
       ...prev,
       players: prev.players.map((player) => {
         // Update player state based on votes
         return player;
       }),
+      gameTranscript: newTranscript,
       killLog: [...prev.killLog, { player, round: gameState.killLog.length }],
     }));
 
