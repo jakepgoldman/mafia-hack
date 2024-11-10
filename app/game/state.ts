@@ -27,18 +27,31 @@ export default class Game {
   }
 
   public getState = () => {
-    return this.state;
+    return { ...this.state };
+  };
+
+  public updateStage = (stage: "day" | "night") => {
+    this.state = {
+      ...this.state,
+      stage,
+    };
   };
 
   public updateTranscript = (transcript: string) => {
-    this.state.gameTranscript = this.state.gameTranscript + "\n" + transcript;
-  };
-  public addPlayerSpokenInRound = (player: Player) => {
-    this.state.playersSpokenInRound.push(player);
+    this.state = {
+      ...this.state,
+      gameTranscript: this.state.gameTranscript + "\n" + transcript,
+    };
   };
 
-  private pickPlayerToSpeak = () => {
-    // maybe use gpt to determine who should speak
+  public addPlayerSpokenInRound = (player: Player) => {
+    this.state = {
+      ...this.state,
+      playersSpokenInRound: [...this.state.playersSpokenInRound, player],
+    };
+  };
+
+  public pickPlayerToSpeak = () => {
     if (this.state.players.length === this.state.playersSpokenInRound.length) {
       return;
     }
@@ -55,7 +68,6 @@ export default class Game {
       }
     }
 
-    // pick a player to speak
     return chosenPlayer;
   };
 
@@ -69,18 +81,14 @@ export default class Game {
     const textSpoken = await player.speak();
 
     this.updateTranscript(textSpoken);
-
     this.addPlayerSpokenInRound(player);
   };
 
-  private tallyVotesOfWhoToKill = () => {
-    // tally votes to kill
-
+  public tallyVotesOfWhoToKill = () => {
     const votes = this.state.players.map((player) => {
       return player.voteToKill(this.state.players, this.state.gameTranscript);
     });
 
-    // get the player with the most votes
     const playerToKill = votes.reduce((acc, curr) => {
       acc[curr.getState().name] = acc[curr.getState().name] + 1 || 1;
       return acc;
@@ -94,7 +102,6 @@ export default class Game {
   };
 
   public tallyVotesAndKill = () => {
-    // tally votes to kill
     const playerToKillName = this.tallyVotesOfWhoToKill();
     const player = this.state.players.find(
       (player) => player.getState().name === playerToKillName
@@ -105,17 +112,24 @@ export default class Game {
     }
 
     player.die();
-    this.state.killLog.push({ player, round: this.state.killLog.length });
+    this.state = {
+      ...this.state,
+      killLog: [
+        ...this.state.killLog,
+        { player, round: this.state.killLog.length },
+      ],
+      players: this.state.players.map((p) =>
+        p.getState().name === player.getState().name ? player : p
+      ),
+    };
     this.updateTranscript("Player " + player.getState().name + " was killed");
   };
 
   private mafiaVoteToKill = () => {
-    // mafia votes to kill
     const mafia = this.state.players.filter(
       (player) => player.getState().type === "mafia"
     );
 
-    // mafia votes to kill, can't kill mafia
     const votes = mafia.map((player) => {
       return player.voteToKill(
         this.state.players.filter(
@@ -125,7 +139,6 @@ export default class Game {
       );
     });
 
-    // get the player with the most votes
     const playerToKill = votes.reduce((acc, curr) => {
       acc[curr.getState().name] = acc[curr.getState().name] + 1 || 1;
       return acc;
@@ -139,7 +152,6 @@ export default class Game {
   };
 
   public mafiaKill = () => {
-    // mafia votes to kill
     const playerToKillName = this.mafiaVoteToKill();
 
     const player = this.state.players.find(
@@ -150,14 +162,21 @@ export default class Game {
       return;
     }
 
-    // mafia can't kill mafia
     if (player.getState().type === "mafia") {
       return;
     }
 
-    // kill the player
     player.die();
-    this.state.killLog.push({ player, round: this.state.killLog.length });
+    this.state = {
+      ...this.state,
+      killLog: [
+        ...this.state.killLog,
+        { player, round: this.state.killLog.length },
+      ],
+      players: this.state.players.map((p) =>
+        p.getState().name === player.getState().name ? player : p
+      ),
+    };
     this.updateTranscript("Player " + player.getState().name + " was killed");
   };
 
@@ -170,11 +189,17 @@ export default class Game {
     );
 
     if (mafia.length === 0) {
-      this.state.isGameOver = true;
-      this.state.gameStatus = "citizens win";
+      this.state = {
+        ...this.state,
+        isGameOver: true,
+        gameStatus: "citizens win",
+      };
     } else if (mafia.length >= citizens.length) {
-      this.state.isGameOver = true;
-      this.state.gameStatus = "mafia wins";
+      this.state = {
+        ...this.state,
+        isGameOver: true,
+        gameStatus: "mafia wins",
+      };
     }
   };
 }

@@ -1,5 +1,3 @@
-import { play } from "elevenlabs";
-import { elevenLabsClient } from "../clients/11labs";
 import { createAudioStreamFromText } from "../utils/tts_service";
 
 export type PlayerState = {
