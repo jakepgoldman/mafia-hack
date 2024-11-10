@@ -18,6 +18,10 @@ export const createAudioStreamFromText = async (text: string, voiceId: string): 
     voice: voiceId,
     model_id: "eleven_turbo_v2_5",
     text,
+    settings: {
+      stability: 0.4,  // Controls the consistency of tone (0.0 = chaotic, 1.0 = very consistent)
+      clarity: 0.9,    // Controls clarity and emotional range (0.0 = robotic, 1.0 = natural/expressive)
+    },
   });
 
   const chunks: Buffer[] = [];
