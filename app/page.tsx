@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Flex, useMantineColorScheme } from "@mantine/core";
+import { Button, Card, Flex, useMantineColorScheme, Modal, Title } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
 import { AgentCenter } from "../components/AgentCenter";
 import Player, { PlayerState } from "./game/player";
@@ -94,7 +94,7 @@ export default function HomePage() {
     gameStatus: "game not over",
     gameTranscript: "",
     players: stock_players.map((p) => new Player(p)),
-    narrator: new Narrator({voiceId: "j9jfwdrw7BRfcR43Qohk"}),
+    narrator: new Narrator({ voiceId: "j9jfwdrw7BRfcR43Qohk" }),
     killLog: [] as { player: Player; round: number }[],
     currentRound: 1,
     playersSpokenInRound: [] as Player[],
@@ -301,7 +301,7 @@ export default function HomePage() {
       <Flex direction="column" gap={8}>
         <AgentCenter game={gameState} />
 
-        {gameState.isGameOver && <Card>{gameState.gameStatus}</Card>}
+        {gameState.isGameOver && <Modal opened={true} onClose={() => { }}><Title>Game over: {gameState.gameStatus}!</Title></Modal>}
 
         {!gameState.isGameOver && (
           <>
