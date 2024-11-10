@@ -8,10 +8,10 @@ import json
 from pydantic import BaseModel
 
 # load the key from openai_key.dat
-with open("openai_key.dat", "r") as f:
-    api_key = f.readlines()[0].strip()
+# with open("openai_key.dat", "r") as f:
+#     api_key = f.readlines()[0].strip()
 
-client = OpenAI(api_key=api_key)
+client = OpenAI()
 
 
 class SpeechResponse(BaseModel):
