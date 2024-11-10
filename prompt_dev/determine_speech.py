@@ -19,22 +19,23 @@ class SpeechResponse(BaseModel):
     speech: str  # The player name or "none" if no one is nominated
 
 
-def render_determine_speech_prompt(player, player_type, backstory, transcript):
-    """This prompt queries the LLM with the full transcript to see what they would strategically say in this situation.
-
-    First we concatenate a player, player type, and their backstory. Then, we include the transcript of the game so far. Finally,
-    We query the LLM, asking what such a player would do in this situation.
-
-    What would this player say? Would they accuse someone, defend themselves, make up an innocuous lie, say something insidious, or
-    something else?
+def create_speech_prompt(player, player_type, backstory, transcript):
+    """This function creates the prompt for querying the LLM to determine a player's speech in a game of Mafia.
 
     Args:
         player: The player who must speak
+        player_type: The type of player who is speaking
         backstory: The backstory of the player speaking
         transcript: The transcript of the game
-        player_type: The type of player who is speaking
+
+    Returns:
+        A tuple containing the system message and the user prompt
     """
-    prompt = (
+    system_message = (
+        "You are the dungeon master for a game of Mafia. You are trying to determine how a player would respond strategically "
+        "in a game of Mafia. Please respond only with JSON."
+    )
+    user_prompt = (
         f"Game Transcript: {transcript}\n"
         f"Consider a player named {player}, who is a {player_type} with the following backstory: {backstory}. "
         f"Describe in JSON format what {player} would say in this situation. "
@@ -44,7 +45,7 @@ def render_determine_speech_prompt(player, player_type, backstory, transcript):
         f'  "speech": "<the player\'s actual speech>"\n'
         f"}}"
     )
-    return prompt
+    return system_message, user_prompt
 
 
 def query_mafia_speech(
@@ -65,18 +66,14 @@ def query_mafia_speech(
         debug: Whether to log the query for later inspection
 
     """
-    prompt = render_determine_speech_prompt(player, player_type, backstory, transcript)
+    system_message, user_prompt = create_speech_prompt(
+        player, player_type, backstory, transcript
+    )
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini",
         messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are the dungeon master for a game of Mafia. You are trying to determine how a player would respond strategically "
-                    "in a game of Mafia. Please respond only with JSON."
-                ),
-            },
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_prompt},
         ],
         response_format=SpeechResponse,
     )
@@ -84,7 +81,7 @@ def query_mafia_speech(
     response = completion.choices[0].message.parsed
 
     result = {
-        "prompt": prompt,
+        "prompt": user_prompt,
         "response": completion.choices[0].message.content,
         "reason": response.reason,
         "speech": response.speech,

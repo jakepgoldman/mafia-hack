@@ -19,23 +19,24 @@ class YesNoResponse(BaseModel):
     yesno: bool
 
 
-def render_determine_vote_prompt(
-    player, player_type, backstory, transcript, target_player
-):
-    """This prompt queries the LLM with the full transcript to see whether they would vote for a given player to be tossed.
-
-    First we concatenate a player, player type, and their backstory. then, we include the transcript of the game so far. Finally,
-    We query the LLM, asking what such a player would do in this situation.
-
-    Would they vote to toss the target player?
+def create_vote_prompt(player, player_type, backstory, transcript, target_player):
+    """This function creates the prompt for querying the LLM to determine a player's vote in a game of Mafia.
 
     Args:
         player: The player who must decide their vote
+        player_type: The type of player who is voting
         backstory: The backstory of the player voting
         transcript: The transcript of the game
-        player_type: The type of player who is voting
+        target_player: The player to be voted on
+
+    Returns:
+        A tuple containing the system message and the user prompt
     """
-    prompt = (
+    system_message = (
+        "You are the dungeon master for a game of Mafia. You are trying to determine how a player would vote "
+        "in a game of Mafia. Please respond only with JSON."
+    )
+    user_prompt = (
         f"Game Transcript: {transcript}\n"
         f"Consider a player named {player}, who is a {player_type} with the following backstory: {backstory}. "
         f"Would this player, {player}, vote to toss {target_player}? Respond only in JSON format with the following structure:\n"
@@ -44,7 +45,7 @@ def render_determine_vote_prompt(
         f'  "vote": "<yes or no>"\n'
         f"}}"
     )
-    return prompt
+    return system_message, user_prompt
 
 
 def query_mafia_vote(
@@ -67,20 +68,14 @@ def query_mafia_vote(
         debug: Whether to log the query for later inspection
 
     """
-    prompt = render_determine_vote_prompt(
+    system_message, user_prompt = create_vote_prompt(
         player, player_type, backstory, transcript, target_player
     )
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-mini",
         messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are the dungeon master for a game of Mafia. You are trying to determine how a player would vote "
-                    "in a game of Mafia. Please respond only with JSON."
-                ),
-            },
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_prompt},
         ],
         response_format=YesNoResponse,
     )
@@ -88,7 +83,7 @@ def query_mafia_vote(
     response = completion.choices[0].message.parsed
 
     result = {
-        "prompt": prompt,
+        "prompt": user_prompt,
         "response": completion.choices[0].message.parsed.json(),
         "expected_output": expected_output,
         "reason": response.reason,

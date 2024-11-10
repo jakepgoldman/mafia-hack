@@ -18,14 +18,8 @@ class NominationResponse(BaseModel):
     nomination: str  # The player name or "none" if no one is nominated
 
 
-def render_determine_nominate_prompt(
-    player,
-    player_type,
-    backstory,
-    transcript,
-    all_players,
-):
-    """This prompt queries the LLM with the full transcript to see who a player would nominate to be tossed in a game of Mafia.
+def create_nominate_prompt(player, player_type, backstory, transcript, all_players):
+    """This function creates the prompt for querying the LLM to determine a player's nomination in a game of Mafia.
 
     Args:
         player: The player considering making a nomination
@@ -33,9 +27,16 @@ def render_determine_nominate_prompt(
         backstory: The backstory of the player to be voted on
         transcript: The transcript of the game
         all_players: The names of all players in the game
+
+    Returns:
+        A tuple containing the system message and the user prompt
     """
     all_players_str = ", ".join(all_players)
-    prompt = (
+    system_message = (
+        "You are the dungeon master for a game of Mafia. You are trying to determine how a player would nominate "
+        "another player in the game. Respond with structured output."
+    )
+    user_prompt = (
         f"Game Transcript: {transcript}\n"
         f"Consider a player named {player}, who is a {player_type} with the following backstory: {backstory}. "
         f"Which of the following players ({all_players_str}), if any, would they nominate to be tossed? "
@@ -45,7 +46,7 @@ def render_determine_nominate_prompt(
         f'  "nomination": "<player name or \'none\'>"\n'
         f"}}"
     )
-    return prompt
+    return system_message, user_prompt
 
 
 def query_mafia_nominate(
@@ -67,21 +68,15 @@ def query_mafia_nominate(
         all_players: The names of all players in the game
         debug: Whether to log the query for later inspection
     """
-    prompt = render_determine_nominate_prompt(
+    system_message, user_prompt = create_nominate_prompt(
         player, player_type, backstory, transcript, all_players
     )
 
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-2024-08-06",
         messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are the dungeon master for a game of Mafia. You are trying to determine how a player would nominate "
-                    "another player in the game. Respond with structured output."
-                ),
-            },
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_prompt},
         ],
         response_format=NominationResponse,
     )
@@ -90,7 +85,7 @@ def query_mafia_nominate(
     response = completion.choices[0].message.parsed
 
     result = {
-        "prompt": prompt,
+        "prompt": user_prompt,
         "response": completion.choices[0].message.content,
         "expected_output": expected_output,
         "reason": response.reason,
