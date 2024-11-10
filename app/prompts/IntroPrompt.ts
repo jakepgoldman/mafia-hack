@@ -13,7 +13,7 @@ export function createIntroPrompt(
 
     const userPrompt =
         `Introduce yourself to the user in a few sentences and then mention something about how you're about to play mafia.` +
-        `You can reference which of the other characters you might already be suspicious of. Here's the list: ${allPlayersStr}. Please be concise.` +
+        `Please be concise.` +
         `Respond in JSON format as:\n{\n  "intro": ` +
         `"<introduction speech and mafia reference>"}`;
 
