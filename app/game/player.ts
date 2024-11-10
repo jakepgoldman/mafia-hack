@@ -61,6 +61,7 @@ export default class Player {
 
   public async voteToKill(
     players: Player[],
+    deadPlayers: Player[],
     transcript: string
   ): Promise<Player> {
     // prompt gpt to ask for a player to vote for based on game context
@@ -73,7 +74,8 @@ export default class Player {
       type,
       personalityDescription,
       transcript,
-      players.map((player) => player.getState().name)
+      players.map((player) => player.getState().name),
+      deadPlayers.map((player) => player.getState().name)
     );
 
     const data = await openAIClient.beta.chat.completions.parse({
